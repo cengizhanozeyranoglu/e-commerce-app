@@ -1,0 +1,99 @@
+services:
+  postgres:
+    container_name: ms_pg_sql
+    image: postgres
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: admin
+      PG_DATA: /var/lib/postgresql/data
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    networks:
+      - microservices-net
+    restart: unless-stopped
+
+  pgadmin:
+    container_name: ms_pgadmin
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin@pgadmin.org}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PG_ADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    ports:
+      - 5050:80
+    networks:
+      - microservices-net
+    restart: unless-stopped
+
+  redis:
+    image: redis:latest
+    container_name: ms_redis
+    ports:
+      - 6379:6379
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - microservices-net
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: ms_redis_insight
+    ports:
+      - 5540:5540
+    restart: unless-stopped
+    environment:
+      REDIS_HOST: ms_redis
+      REDIS_PORT: 6379
+    networks:
+      - microservices-net
+
+  mongodb:
+    container_name: ms_mongo_db
+    image: mongo
+    ports:
+      - 27017:27017
+    volumes:
+      - mongo:/data
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: admin
+
+  mongo-express:
+    image: mongo-express
+    container_name: ms_mongo_express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+        ME_CONFIG_MONGODB_ADMINUSERNAME: root
+        ME_CONFIG_MONGODB_ADMINPASSWORD: admin
+        ME_CONFIG_MONGODB_SERVER: ms_mongo_db
+        ME_CONFIG_BASICAUTH: "false"
+    depends_on:
+      - mongodb
+
+
+  maildev:
+    container_name: ms_mail_dev
+    image: maildev/maildev
+    ports:
+      - 1080:1080
+      - 1025:1025
+
+
+
+
+networks:
+  microservices-net:
+    driver: bridge
+
+volumes:
+  postgres:
+  pgadmin:
+  mongo:
+  redis-data:
